@@ -91,7 +91,7 @@ h2 {
     <h2>🐻 九九乘法大王</h2>
     <div class="stats">
         <div>得分: <span id="score">0</span></div>
-        <div>時間: <span id="timer">40</span>s</div>
+        <div>時間: <span id="timer">60</span>s</div>
     </div>
     
     <div id="game-box">
@@ -155,7 +155,7 @@ h2 {
     const scoreRef = ref(db, 'scores');
 
     let score = 0;
-    let timeLeft = 40;
+    let timeLeft = 60;
     let currentAns = 0;
     let timerInterval = null;
 
@@ -171,7 +171,7 @@ h2 {
     // 1. 遊戲開始
     window.startGame = function() {
         score = 0;
-        timeLeft = 40;
+        timeLeft = 60;
         scoreEl.textContent = score;
         timerEl.textContent = timeLeft;
         inputEl.value = '';
@@ -266,6 +266,7 @@ h2 {
 </body>
 
 </html>
+
 
 
 

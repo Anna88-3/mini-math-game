@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>九九乘法大挑戰 - 手機大字版</title>
+    <style>
+        /* 基礎樣式：手機優化與大字體 */
+        body { font-family: 'Microsoft JhengHei', sans-serif; text-align: center; background-color: #FFF9E6; margin: 0; padding: 10px; }
+        .game-container { background: white; width: 95%; max-width: 500px; margin: 10px auto; padding: 20px; border-radius: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border: 8px solid #FFD966; box-sizing: border-box; }
+        
+        h2 { color: #E67E22; font-size: 32px; margin: 10px 0; }
+        .stats { display: flex; justify-content: space-around; font-size: 24px; font-weight: bold; color: #34495E; margin-bottom: 15px; }
+        
+        /* 題目顯示區域 */
+        #question { font-size: 80px; font-weight: 900; margin: 20px 0; color: #2C3E50; text-shadow: 2px 2px #FFD966; min-height: 100px; }
+        #answer-input { font-size: 40px; font-weight: bold; width: 80%; padding: 15px; text-align: center; border: 4px solid #BDC3C7; border-radius: 15px; background: #ECF0F1; margin-bottom: 20px; color: #2C3E50; }
+
+        /* 虛擬數字鍵盤 */
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 auto 20px auto; max-width: 320px; }
+        .key { background: #5DADE2; color: white; font-size: 32px; font-weight: bold; padding: 20px; border-radius: 15px; border: none; box-shadow: 0 5px #2E86C1; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .key:active { box-shadow: 0 2px #2E86C1; transform: translateY(3px); }
+        .key.back { background: #E74C3C; box-shadow: 0 5px #C0392B; font-size: 24px; }
+        .key.zero { grid-column: span 1; }
+
+        #start-btn { background: #27AE60; color: white; border: none; padding: 20px 40px; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 50px; box-shadow: 0 6px #1E8449; }
+
+        /* 15名排行榜樣式 */
+        #leaderboard { margin-top: 30px; text-align: left; background: #FFF; border-radius: 20px; padding: 15px; border: 3px solid #FFD966; max-height: 500px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border-bottom: 1px solid #EEE; padding: 12px; text-align: center; font-size: 18px; }
+        th { background-color: #FDF2E9; color: #E67E22; }
+
+        /* 結束畫面大畫面 */
+        #finish-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.98); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; }
+        .bear-img { width: 180px; margin-bottom: 20px; }
+        .congrats-text { font-size: 36px; font-weight: 900; color: #E67E22; margin: 10px; }
+        #final-score { font-size: 60px; color: #C0392B; }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <h2>🐻 九九乘法大王</h2>
+    <div class="stats">
+        <div>得分: <span id="score">0</span></div>
+        <div>時間: <span id="timer">40</span>s</div>
+    </div>
+    
+    <div id="game-box">
+        <div id="question">點擊開始！</div>
+        <input type="text" id="answer-input" readonly placeholder="?" >
+        
+        <div class="keypad">
+            <button class="key" onclick="pressKey('1')">1</button>
+            <button class="key" onclick="pressKey('2')">2</button>
+            <button class="key" onclick="pressKey('3')">3</button>
+            <button class="key" onclick="pressKey('4')">4</button>
+            <button class="key" onclick="pressKey('5')">5</button>
+            <button class="key" onclick="pressKey('6')">6</button>
+            <button class="key" onclick="pressKey('7')">7</button>
+            <button class="key" onclick="pressKey('8')">8</button>
+            <button class="key" onclick="pressKey('9')">9</button>
+            <button class="key" style="background:#BDC3C7; box-shadow:0 5px #95A5A6;" disabled></button>
+            <button class="key zero" onclick="pressKey('0')">0</button>
+            <button class="key back" onclick="pressKey('back')">←刪除</button>
+        </div>
+        
+        <button id="start-btn" onclick="startGame()">開始比賽!</button>
+    </div>
+
+    <div id="leaderboard">
+        <h3 style="text-align:center; color:#E67E22;">🏆 前 15 名高手榜</h3>
+        <table>
+            <thead><tr><th>名次</th><th>名字</th><th>分數</th></tr></thead>
+            <tbody id="rank-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="finish-overlay">
+    <img src="https://img.icons8.com/color/480/teddy-bear.png" class="bear-img">
+    <div class="congrats-text">好棒喔！</div>
+    <div class="congrats-text">恭喜你得了 <span id="final-score">0</span> 分！</div>
+    <button onclick="closeOverlay()" style="font-size:24px; padding:15px 30px; border-radius:20px; background:#5DADE2; color:white; border:none; margin-top:20px; cursor:pointer;">再玩一次</button>
+</div>
+
+<audio id="correct-sound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+
+<script type="module">
+    // 引入 Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, push, onValue, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // --- 【請務必將以下換成你的 Firebase 金鑰】 ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyChW_66hOk5bC1aVoK345-4P6IOe3peRtE",
+        authDomain: "multiplayer-math-game-87c02.firebaseapp.com",
+        databaseURL: "https://multiplayer-math-game-87c02-default-rtdb.firebaseio.com",
+        projectId: "multiplayer-math-game-87c02",
+        storageBucket: "multiplayer-math-game-87c02.firebasestorage.app",
+        messagingSenderId: "16967644876",
+        appId: "1:16967644876:web:4d21d083ff010967a8b469"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const scoreRef = ref(db, 'scores');
+
+    let score = 0;
+    let timeLeft = 40;
+    let currentAns = 0;
+    let timerInterval = null;
+
+    const questionEl = document.getElementById('question');
+    const inputEl = document.getElementById('answer-input');
+    const scoreEl = document.getElementById('score');
+    const timerEl = document.getElementById('timer');
+    const startBtn = document.getElementById('start-btn');
+    const finishOverlay = document.getElementById('finish-overlay');
+    const finalScoreEl = document.getElementById('final-score');
+    const correctSound = document.getElementById('correct-sound');
+
+    // 1. 遊戲開始
+    window.startGame = function() {
+        score = 0;
+        timeLeft = 40;
+        scoreEl.textContent = score;
+        timerEl.textContent = timeLeft;
+        inputEl.value = '';
+        startBtn.style.display = 'none';
+        nextQuestion();
+        
+        if(timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            timerEl.textContent = timeLeft;
+            if (timeLeft <= 0) endGame();
+        }, 1000);
+    };
+
+  // 2. 出題邏輯 (限定特定的乘數)
+    function nextQuestion() {
+        // 先把你想出的數字放在一個清單(陣列)裡
+        const allowedNumbers = [2, 3, 4, 5, 8];
+        
+        // 從清單中隨機挑一個數字當作 a
+        const a = allowedNumbers[Math.floor(Math.random() * allowedNumbers.length)];
+        
+        // b 維持 1~9 隨機
+        const b = Math.floor(Math.random() * 9) + 1;
+        
+        currentAns = a * b;
+        questionEl.textContent = `${a} × ${b} = ?`;
+    }
+
+    // 3. 鍵盤輸入
+    window.pressKey = function(val) {
+        if (!timerInterval) return; 
+        if (val === 'back') {
+            inputEl.value = inputEl.value.slice(0, -1);
+        } else {
+            inputEl.value += val;
+        }
+        
+        if (parseInt(inputEl.value) === currentAns) {
+            correctSound.currentTime = 0;
+            correctSound.play();
+            score += 10;
+            scoreEl.textContent = score;
+            setTimeout(() => {
+                inputEl.value = '';
+                nextQuestion();
+            }, 100);
+        }
+    };
+
+    // 4. 遊戲結束
+    function endGame() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        finalScoreEl.textContent = score;
+        finishOverlay.style.display = 'flex';
+        
+        const playerName = prompt("太厲害了！你的名字是？", "小高手");
+        if (playerName) {
+            push(scoreRef, {
+                name: playerName,
+                score: score,
+                timestamp: Date.now()
+            });
+        }
+    }
+
+    window.closeOverlay = function() {
+        finishOverlay.style.display = 'none';
+        startBtn.style.display = 'inline-block';
+        questionEl.textContent = "預備備!";
+    };
+
+    // 5. 排行榜即時更新 (顯示 15 名)
+    const topScoresQuery = query(scoreRef, orderByChild('score'), limitToLast(15));
+    onValue(topScoresQuery, (snapshot) => {
+        const data = snapshot.val();
+        const rankBody = document.getElementById('rank-body');
+        rankBody.innerHTML = '';
+        if (!data) return;
+
+        let list = [];
+        for (let id in data) list.push(data[id]);
+        list.sort((a, b) => b.score - a.score);
+
+        list.forEach((item, index) => {
+            rankBody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.score}</td></tr>`;
+        });
+    });
+</script>
+
+</body>
+</html>

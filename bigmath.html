@@ -244,7 +244,23 @@ h2 {
         startBtn.style.display = 'inline-block';
         questionEl.textContent = "預備備!";
     };
-
+function getCurrentWeekId() {
+    const now = new Date();
+    // 調整時間，讓週日 22:00 之後的時間看起來像是「下一週」
+    const adjustedNow = new Date(now.getTime());
+    
+    // 如果是週日(0) 且 時間 >= 22點
+    if (now.getDay() === 0 && now.getHours() >= 22) {
+        adjustedNow.setDate(now.getDate() + 1); // 歸類到隔天(週一)所在的週次
+    }
+    
+    // 取得該日期是該年份的第幾週（簡單做法是用日期字符串）
+    // 這裡建議用簡單的「週一日期」當作 key
+    const day = adjustedNow.getDay();
+    const diff = adjustedNow.getDate() - day + (day === 0 ? -6 : 1); 
+    const monday = new Date(adjustedNow.setDate(diff));
+    return monday.toISOString().split('T')[0]; // 回傳如 "2023-10-23"
+}
     // 5. 排行榜即時更新 (顯示 15 名)
     const topScoresQuery = query(scoreRef, orderByChild('score'), limitToLast(15));
     onValue(topScoresQuery, (snapshot) => {
@@ -266,6 +282,7 @@ h2 {
 </body>
 
 </html>
+
 
 
 
